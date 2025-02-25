@@ -22,7 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
-    // Keep your existing resource routes for categories and clothing items
+   
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('clothing-items', ClothingItemController::class);
 });
