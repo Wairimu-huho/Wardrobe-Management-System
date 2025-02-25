@@ -7,40 +7,141 @@ use App\Models\ClothingItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ClothingItemController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource with advanced filtering.
      */
     public function index(Request $request)
     {
-        $query = ClothingItem::with('category')->where('user_id', auth()->id());
+        $query = ClothingItem::with('category')
+            ->where('user_id', auth()->id());
         
-        // Apply category filter
-        if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
+        // Text Search (across multiple fields)
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%")
+                  ->orWhere('brand', 'like', "%{$searchTerm}%")
+                  ->orWhere('color', 'like', "%{$searchTerm}%");
+            });
         }
         
-        // Apply favorite filter
+        // Filter by category
+        if ($request->has('category_id') && !empty($request->category_id)) {
+            if (is_array($request->category_id)) {
+                $query->whereIn('category_id', $request->category_id);
+            } else {
+                $query->where('category_id', $request->category_id);
+            }
+        }
+        
+        // Filter by color
+        if ($request->has('color') && !empty($request->color)) {
+            if (is_array($request->color)) {
+                $query->whereIn('color', $request->color);
+            } else {
+                $query->where('color', 'like', "%{$request->color}%");
+            }
+        }
+        
+        // Filter by size
+        if ($request->has('size') && !empty($request->size)) {
+            if (is_array($request->size)) {
+                $query->whereIn('size', $request->size);
+            } else {
+                $query->where('size', $request->size);
+            }
+        }
+        
+        // Filter by brand
+        if ($request->has('brand') && !empty($request->brand)) {
+            if (is_array($request->brand)) {
+                $query->whereIn('brand', $request->brand);
+            } else {
+                $query->where('brand', 'like', "%{$request->brand}%");
+            }
+        }
+        
+        // Filter by favorite status
         if ($request->has('favorite')) {
             $query->where('favorite', $request->favorite == 'true' || $request->favorite == '1');
         }
         
-        // Apply search
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('brand', 'like', "%{$search}%")
-                  ->orWhere('color', 'like', "%{$search}%");
-            });
+        // Filter by created date range
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->whereDate('created_at', '>=', $request->date_from);
         }
         
-        // Return paginated results
-        $clothingItems = $query->latest()->paginate(15);
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        // Sorting
+        $sortField = $request->sort_by ?? 'created_at';
+        $sortOrder = $request->sort_order ?? 'desc';
+        
+        // Validate sort field to prevent SQL injection
+        $allowedSortFields = ['name', 'brand', 'color', 'size', 'created_at', 'updated_at'];
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'created_at';
+        }
+        
+        // Validate sort order
+        if (!in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+        
+        $query->orderBy($sortField, $sortOrder);
+        
+        // Pagination
+        $perPage = $request->per_page ?? 15;
+        if ($perPage > 100) $perPage = 100; // Limit maximum items per page
+        
+        $clothingItems = $query->paginate($perPage);
         return response()->json($clothingItems);
+    }
+
+    /**
+     * Get metadata for filters (available colors, sizes, brands)
+     */
+    public function filterMetadata()
+    {
+        $userId = auth()->id();
+        
+        $metadata = [
+            'colors' => ClothingItem::where('user_id', $userId)
+                ->select('color')
+                ->distinct()
+                ->whereNotNull('color')
+                ->orderBy('color')
+                ->pluck('color'),
+                
+            'sizes' => ClothingItem::where('user_id', $userId)
+                ->select('size')
+                ->distinct()
+                ->whereNotNull('size')
+                ->orderBy('size')
+                ->pluck('size'),
+                
+            'brands' => ClothingItem::where('user_id', $userId)
+                ->select('brand')
+                ->distinct()
+                ->whereNotNull('brand')
+                ->orderBy('brand')
+                ->pluck('brand'),
+                
+            'categories_count' => DB::table('clothing_items')
+                ->select('category_id', DB::raw('count(*) as count'))
+                ->where('user_id', $userId)
+                ->groupBy('category_id')
+                ->get()
+        ];
+        
+        return response()->json($metadata);
     }
 
     /**

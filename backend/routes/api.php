@@ -3,7 +3,7 @@
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\ClothingItemController;
-use App\Http\Controllers\API\ImageUploadController; // Add this import
+use App\Http\Controllers\API\ImageUploadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +25,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Resources
     Route::apiResource('categories', CategoryController::class);
+    
+    // Clothing Items routes
+    Route::get('clothing-items/filter-metadata', [ClothingItemController::class, 'filterMetadata']);
     Route::apiResource('clothing-items', ClothingItemController::class);
     
     // Image upload routes
