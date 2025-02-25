@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\ClothingItemController;
 use Illuminate\Http\Request;
@@ -11,15 +12,17 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Public routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes (require authentication)
+// Protected routes
 Route::middleware('auth:sanctum')->group(function () {
-    // Categories
-    Route::apiResource('categories', CategoryController::class);
+    // Auth
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
     
-    // Clothing Items
+    // Keep your existing resource routes for categories and clothing items
+    Route::apiResource('categories', CategoryController::class);
     Route::apiResource('clothing-items', ClothingItemController::class);
 });
