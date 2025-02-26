@@ -1,14 +1,15 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
-
-// Auth views
+import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
-
-// Main views
 import Dashboard from '../views/Dashboard.vue';
 import ClothingItems from '../views/ClothingItems.vue';
 import ClothingItemDetail from '../views/ClothingItemDetail.vue';
+import ClothingItemForm from '../views/ClothingItemForm.vue';
 import Categories from '../views/Categories.vue';
+import CategoryDetail from '../views/CategoryDetail.vue';
+
 
 // Auth guard
 const requireAuth = (to, from, next) => {
@@ -21,42 +22,42 @@ const requireAuth = (to, from, next) => {
 };
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/dashboard'
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: Register
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
+  { path: '/', component: Home },
+  { path: '/login', component: Login },
+  { path: '/register', component: Register },
+  { 
+    path: '/dashboard', 
     component: Dashboard,
     beforeEnter: requireAuth
   },
   {
     path: '/items',
-    name: 'ClothingItems',
     component: ClothingItems,
     beforeEnter: requireAuth
   },
   {
+    path: '/items/new',
+    component: ClothingItemForm,
+    beforeEnter: requireAuth
+  },
+  {
     path: '/items/:id',
-    name: 'ClothingItemDetail',
     component: ClothingItemDetail,
     beforeEnter: requireAuth
   },
   {
+    path: '/items/:id/edit',
+    component: ClothingItemForm,
+    beforeEnter: requireAuth
+  },
+  {
     path: '/categories',
-    name: 'Categories',
     component: Categories,
+    beforeEnter: requireAuth
+  },
+  {
+    path: '/categories/:id',
+    component: CategoryDetail,
     beforeEnter: requireAuth
   }
 ];
