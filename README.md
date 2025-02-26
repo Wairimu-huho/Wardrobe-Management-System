@@ -1,5 +1,5 @@
 # Wardrobe-Management-System
-# Wardrobe Management System
+
 
 A full-stack web application that allows users to digitally organize and manage their wardrobe. Built with Laravel 11 for the backend API and Vue 3 for the frontend interface.
 
