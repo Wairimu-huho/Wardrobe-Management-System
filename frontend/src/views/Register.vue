@@ -1,14 +1,25 @@
-<!-- src/views/Login.vue -->
+<!-- src/views/Register.vue -->
 <template>
-  <div class="login-page">
-    <div class="login-container">
-      <h2>Login to Wardrobe Manager</h2>
+  <div class="register-page">
+    <div class="register-container">
+      <h2>Create an Account</h2>
       
       <div v-if="authStore.error" class="error-message">
         {{ authStore.error }}
       </div>
       
-      <form @submit.prevent="handleLogin">
+      <form @submit.prevent="handleRegister">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input 
+            type="text" 
+            id="name" 
+            v-model="name" 
+            required
+            class="form-control"
+          />
+        </div>
+        
         <div class="form-group">
           <label for="email">Email</label>
           <input 
@@ -27,18 +38,31 @@
             id="password" 
             v-model="password" 
             required
+            minlength="8"
+            class="form-control"
+          />
+          <small class="form-text">Password must be at least 8 characters</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="password_confirmation">Confirm Password</label>
+          <input 
+            type="password" 
+            id="password_confirmation" 
+            v-model="passwordConfirmation" 
+            required
             class="form-control"
           />
         </div>
         
         <div class="form-action">
-          <button type="submit" class="btn primary" :disabled="authStore.loading">
-            {{ authStore.loading ? 'Logging in...' : 'Login' }}
+          <button type="submit" class="btn primary" :disabled="authStore.loading || !isFormValid">
+            {{ authStore.loading ? 'Registering...' : 'Register' }}
           </button>
         </div>
         
         <div class="form-footer">
-          <p>Don't have an account? <router-link to="/register">Register</router-link></p>
+          <p>Already have an account? <router-link to="/login">Login</router-link></p>
         </div>
       </form>
     </div>
@@ -46,20 +70,33 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
+const name = ref('');
 const email = ref('');
 const password = ref('');
+const passwordConfirmation = ref('');
 
-async function handleLogin() {
-  const success = await authStore.login({
+const isFormValid = computed(() => {
+  return name.value && 
+         email.value && 
+         password.value.length >= 8 && 
+         password.value === passwordConfirmation.value;
+});
+
+async function handleRegister() {
+  if (!isFormValid.value) return;
+  
+  const success = await authStore.register({
+    name: name.value,
     email: email.value,
-    password: password.value
+    password: password.value,
+    password_confirmation: passwordConfirmation.value
   });
   
   if (success) {
@@ -69,13 +106,13 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page {
+.register-page {
   display: flex;
   justify-content: center;
   padding: 40px 0;
 }
 
-.login-container {
+.register-container {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
@@ -115,6 +152,13 @@ label {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
+}
+
+.form-text {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #666;
 }
 
 .form-action {
