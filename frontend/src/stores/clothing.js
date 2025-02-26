@@ -97,46 +97,74 @@ export const useClothingStore = defineStore('clothing', {
       }
     },
     
+    // In your clothing store
+    // src/stores/clothing.js - Update the createItem method
     async createItem(itemData) {
       this.loading = true;
       this.error = null;
       
+      console.log("Creating item with data:", itemData);
+      
       try {
+        // Create a new FormData object
         const formData = new FormData();
         
-        // Add all fields to FormData
+        // Add all fields to FormData, carefully handling each type
         Object.keys(itemData).forEach(key => {
           if (key === 'image' && itemData[key] instanceof File) {
+            // Handle file upload
             formData.append('image', itemData[key]);
-          } else {
+            console.log("Adding image file:", itemData[key].name);
+          } else if (key === 'favorite') {
+            // Convert boolean to 0/1 for Laravel
+            const value = itemData[key] ? 1 : 0;
+            formData.append(key, value);
+            console.log(`Adding ${key}:`, value);
+          } else if (itemData[key] !== null && itemData[key] !== undefined) {
+            // Add other fields
             formData.append(key, itemData[key]);
+            console.log(`Adding ${key}:`, itemData[key]);
           }
         });
         
+        // Print the FormData keys for debugging
+        for (let pair of formData.entries()) {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
+        
+        // Make the API request
+        console.log("Sending request to /clothing-items");
         const response = await apiClient.post('/clothing-items', formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
           }
         });
+        
+        console.log("Received response:", response.data);
         
         // Add to local state
         this.items.unshift(response.data);
         
         return response.data;
       } catch (error) {
+        console.error('Create item error details:', error.response?.data || error.message || error);
         this.error = error.response?.data?.message || 'Failed to create item';
-        console.error('Error creating item:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
     
+      // In your clothing store
     async updateItem(id, itemData) {
       this.loading = true;
       this.error = null;
       
       try {
+        console.log("Updating item with ID:", id, "Data:", itemData);
+        
+        // Create a new FormData object
         const formData = new FormData();
         
         // Add method override for Laravel
@@ -146,29 +174,49 @@ export const useClothingStore = defineStore('clothing', {
         Object.keys(itemData).forEach(key => {
           if (key === 'image' && itemData[key] instanceof File) {
             formData.append('image', itemData[key]);
-          } else {
+            console.log("Adding image file:", itemData[key].name);
+          } else if (key === 'favorite') {
+            // Convert boolean to 0/1 for Laravel
+            const value = itemData[key] ? 1 : 0;
+            formData.append(key, value);
+            console.log(`Adding ${key}:`, value);
+          } else if (itemData[key] !== null && itemData[key] !== undefined) {
             formData.append(key, itemData[key]);
+            console.log(`Adding ${key}:`, itemData[key]);
           }
         });
         
+        // Debug what's being sent
+        console.log("FormData contents:");
+        for (let pair of formData.entries()) {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
+        
+        // Make the POST request (Laravel convention for FormData with files)
         const response = await apiClient.post(`/clothing-items/${id}`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json'
           }
         });
         
-        // Update in local state
+        console.log("Update response:", response.data);
+        
+        // Update item in local state
         const index = this.items.findIndex(item => item.id === parseInt(id));
         if (index !== -1) {
           this.items[index] = response.data;
         }
         
-        this.currentItem = response.data;
+        // Update currentItem if needed
+        if (this.currentItem && this.currentItem.id === parseInt(id)) {
+          this.currentItem = response.data;
+        }
         
         return response.data;
       } catch (error) {
+        console.error('Update error:', error.response?.data || error);
         this.error = error.response?.data?.message || `Failed to update item #${id}`;
-        console.error('Error updating item:', error);
         throw error;
       } finally {
         this.loading = false;
