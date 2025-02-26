@@ -5,8 +5,10 @@ const apiClient = axios.create({
   baseURL: 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest' // This helps with Laravel CSRF protection
+  },
+  withCredentials: true // This enables cookies if needed
 });
 
 // Request interceptor for adding the auth token

@@ -13,12 +13,7 @@
     </div>
 
     <div v-if="saveSuccess" class="success-message">
-        Item saved successfully!
-        <div class="success-actions">
-            <button @click="router.push('/items')" class="btn primary">
-            View All Items
-            </button>
-        </div>
+      Item saved successfully! Redirecting to item details...
     </div>
     
     <form @submit.prevent="saveItem" class="item-form">
@@ -157,11 +152,13 @@ const router = useRouter();
 const clothingStore = useClothingStore();
 const categoryStore = useCategoryStore();
 
-const saveSuccess = ref(false);
+
 const fileInput = ref(null);
 const imagePreview = ref(null);
 const error = ref(null);
 const validationErrors = reactive({});
+
+const saveSuccess = ref(false);
 
 const isEditMode = computed(() => {
   return route.params.id && route.params.id !== 'new';
@@ -187,8 +184,12 @@ onMounted(async () => {
   // If edit mode, fetch the item
   if (isEditMode.value) {
     try {
+      console.log("Loading item for editing:", route.params.id);
       const item = await clothingStore.fetchItem(route.params.id);
+      
       if (item) {
+        console.log("Item loaded for editing:", item);
+        // Make sure to copy all the item data to the form
         formData.name = item.name || '';
         formData.description = item.description || '';
         formData.category_id = item.category_id || null;
@@ -201,10 +202,13 @@ onMounted(async () => {
         if (item.image_path) {
           imagePreview.value = `http://localhost:8000/storage/${item.image_path}`;
         }
+      } else {
+        error.value = 'Item not found';
+        console.error('Item not found for editing');
       }
     } catch (err) {
       error.value = 'Failed to load item data';
-      console.error(err);
+      console.error('Error loading item for editing:', err);
     }
   }
 });
@@ -245,48 +249,82 @@ function removeImage() {
   fileInput.value.value = '';
 }
 
+
+
+// Make sure this function properly checks edit mode
 async function saveItem() {
   error.value = null;
-  Object.keys(validationErrors).forEach(key => delete validationErrors[key]);
+  saveSuccess.value = false;
   
-  console.log("Form data being submitted:", JSON.stringify(formData));
+  console.log("Form submission started. Edit mode:", isEditMode.value);
+  console.log("Form data:", formData);
   
   try {
     let result;
     
     if (isEditMode.value) {
-      console.log("Updating existing item");
-      result = await clothingStore.updateItem(route.params.id, formData);
+      console.log("Updating item ID:", route.params.id);
+      result = await clothingStore.updateItem(route.params.id, {...formData});
     } else {
       console.log("Creating new item");
-      result = await clothingStore.createItem(formData);
+      result = await clothingStore.createItem({...formData});
     }
     
-    console.log("API response:", result);
+    console.log("Save result:", result);
     
     if (result && result.id) {
-      console.log("Navigation to:", `/items/${result.id}`);
-      router.push(`/items/${result.id}`);
+      saveSuccess.value = true;
+      
+      // Explicitly update the store's items
+      await clothingStore.fetchItems(clothingStore.pagination.currentPage);
+      
+      // Redirect after a brief delay to show success message
+      setTimeout(() => {
+        router.push(`/items/${result.id}`);
+      }, 1500);
     } else {
-      console.error("Invalid result from API:", result);
       error.value = "Received invalid response from server";
     }
   } catch (err) {
-    console.error("Full error object:", err);
-    console.log("Error response data:", err.response?.data);
+    console.error("Error saving item:", err);
     
     if (err.response?.data?.errors) {
-      // Validation errors
-      Object.assign(validationErrors, err.response.data.errors);
-      console.log("Validation errors:", validationErrors);
+      // Laravel validation errors
+      const errorsObj = err.response.data.errors;
+      Object.keys(errorsObj).forEach(key => {
+        validationErrors[key] = errorsObj[key][0];
+      });
+      error.value = "Please fix the validation errors";
     } else {
       error.value = err.response?.data?.message || 'Failed to save item';
     }
   }
 }
+
+// Add this helper function to reset the form
+function resetForm() {
+  formData.name = '';
+  formData.description = '';
+  formData.category_id = null;
+  formData.color = '';
+  formData.size = '';
+  formData.brand = '';
+  formData.favorite = false;
+  formData.image = null;
+  imagePreview.value = null;
+  if (fileInput.value) fileInput.value.value = '';
+}
 </script>
 
 <style scoped>
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
 .item-form-page {
   max-width: 1000px;
   margin: 0 auto;
