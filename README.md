@@ -3,7 +3,7 @@
 
 A full-stack web application that allows users to digitally organize and manage their wardrobe. Built with Laravel 11 for the backend API and Vue 3 for the frontend interface.
 
-![Wardrobe Management System](https://via.placeholder.com/800x400?text=Wardrobe+Management+System)
+
 
 ## Features
 
@@ -241,19 +241,7 @@ frontend/
 └── package.json
 ```
 
-## Screenshots
 
-### Dashboard
-![Dashboard](https://via.placeholder.com/800x400?text=Dashboard)
-
-### My Wardrobe
-![My Wardrobe](https://via.placeholder.com/800x400?text=My+Wardrobe)
-
-### Item Detail
-![Item Detail](https://via.placeholder.com/800x400?text=Item+Detail)
-
-### Categories
-![Categories](https://via.placeholder.com/800x400?text=Categories)
 
 ## Contributing
 
