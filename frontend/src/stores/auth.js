@@ -1,6 +1,6 @@
+// src/stores/auth.js
 import { defineStore } from 'pinia';
-import apiClient from '../services/api';
-import router from '../router';
+import { authService } from '../services/api';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -12,7 +12,7 @@ export const useAuthStore = defineStore('auth', {
   
   getters: {
     isAuthenticated: (state) => !!state.token,
-    getUser: (state) => state.user
+    currentUser: (state) => state.user
   },
   
   actions: {
@@ -21,14 +21,14 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
       
       try {
-        const response = await apiClient.post('/login', credentials);
-        this.token = response.data.token || response.data.access_token;
-        localStorage.setItem('token', this.token);
+        const response = await authService.login(credentials);
+        const token = response.data.token || response.data.access_token;
         
-        // Get user info
+        this.token = token;
+        localStorage.setItem('token', token);
+        
         await this.fetchUser();
         
-        router.push('/dashboard');
         return true;
       } catch (error) {
         this.error = error.response?.data?.message || 'Login failed';
@@ -43,14 +43,14 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
       
       try {
-        const response = await apiClient.post('/register', userData);
-        this.token = response.data.token || response.data.access_token;
-        localStorage.setItem('token', this.token);
+        const response = await authService.register(userData);
+        const token = response.data.token || response.data.access_token;
         
-        // Get user info
+        this.token = token;
+        localStorage.setItem('token', token);
+        
         await this.fetchUser();
         
-        router.push('/dashboard');
         return true;
       } catch (error) {
         this.error = error.response?.data?.message || 'Registration failed';
@@ -63,27 +63,35 @@ export const useAuthStore = defineStore('auth', {
     async fetchUser() {
       if (!this.token) return;
       
+      this.loading = true;
+      
       try {
-        const response = await apiClient.get('/user');
+        const response = await authService.getUser();
         this.user = response.data;
       } catch (error) {
-        this.error = 'Failed to fetch user data';
-        this.logout();
+        this.user = null;
+        this.token = null;
+        localStorage.removeItem('token');
+        this.error = 'Session expired';
+      } finally {
+        this.loading = false;
       }
     },
     
     async logout() {
+      this.loading = true;
+      
       try {
         if (this.token) {
-          await apiClient.post('/logout');
+          await authService.logout();
         }
       } catch (error) {
         console.error('Logout error:', error);
       } finally {
-        this.token = null;
         this.user = null;
+        this.token = null;
         localStorage.removeItem('token');
-        router.push('/login');
+        this.loading = false;
       }
     }
   }

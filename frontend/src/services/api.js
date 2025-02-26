@@ -1,12 +1,12 @@
+// src/services/api.js
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  },
-  withCredentials: false
+  }
 });
 
 // Request interceptor for adding the auth token
@@ -23,17 +23,35 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling errors
+// Response interceptor for handling 401 Unauthorized errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // If unauthorized, clear token and redirect to login
+      // Clear token and redirect to login
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
+
+export const authService = {
+  login(credentials) {
+    return apiClient.post('/login', credentials);
+  },
+  
+  register(userData) {
+    return apiClient.post('/register', userData);
+  },
+  
+  logout() {
+    return apiClient.post('/logout');
+  },
+  
+  getUser() {
+    return apiClient.get('/user');
+  }
+};
 
 export default apiClient;

@@ -1,15 +1,25 @@
+<!-- src/App.vue -->
 <template>
   <div class="app-container">
     <header class="app-header">
       <h1>Wardrobe Management System</h1>
       <nav>
-        <router-link to="/">Home</router-link> |
-        <router-link to="/login">Login</router-link>
+        <template v-if="authStore.isAuthenticated">
+          <router-link to="/dashboard">Dashboard</router-link> |
+          <router-link to="/items">My Wardrobe</router-link> |
+          <router-link to="/categories">Categories</router-link> |
+          <a href="#" @click.prevent="logout">Logout</a>
+        </template>
+        <template v-else>
+          <router-link to="/">Home</router-link> |
+          <router-link to="/login">Login</router-link> |
+          <router-link to="/register">Register</router-link>
+        </template>
       </nav>
     </header>
     
     <main class="main-content">
-      <router-view></router-view>
+      <router-view />
     </main>
     
     <footer class="app-footer">
@@ -18,57 +28,27 @@
   </div>
 </template>
 
+<script setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from './stores/auth';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+onMounted(() => {
+  // Check authentication status on app start
+  if (authStore.token && !authStore.user) {
+    authStore.fetchUser();
+  }
+});
+
+async function logout() {
+  await authStore.logout();
+  router.push('/login');
+}
+</script>
+
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  line-height: 1.6;
-  color: #333;
-}
-
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.main-content {
-  flex: 1;
-}
-
-.app-footer {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  text-align: center;
-  color: #777;
-}
-
-nav {
-  margin-top: 15px;
-}
-
-nav a {
-  color: #42b983;
-  text-decoration: none;
-  margin-right: 10px;
-}
-
-nav a.router-link-active {
-  font-weight: bold;
-}
+/* Keep your existing styles */
 </style>
