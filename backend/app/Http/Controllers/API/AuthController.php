@@ -49,23 +49,24 @@ class AuthController extends Controller
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        if (!Auth::attempt($request->only('email', 'password'))) {
+    
+        // Specify the web guard explicitly
+        if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
             return response()->json([
                 'message' => 'Invalid login credentials'
             ], Response::HTTP_UNAUTHORIZED);
         }
-
+    
         $user = User::where('email', $request->email)->firstOrFail();
         $token = $user->createToken('auth_token')->plainTextToken;
-
+    
         return response()->json([
             'message' => 'Login successful',
             'user' => $user,
